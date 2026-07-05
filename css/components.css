@@ -1,0 +1,99 @@
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   VORN — Component Styles (Search Overlay, Toasts)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+/* ── SEARCH OVERLAY ────────────────────────────────── */
+.search-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(240, 237, 232, 0.97);
+  backdrop-filter: blur(20px);
+  z-index: 700;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s var(--ease-out);
+}
+
+.search-overlay.active {
+  opacity: 1;
+  pointer-events: all;
+}
+
+.search-overlay-close {
+  position: absolute;
+  top: 32px;
+  right: 40px;
+  font-size: 24px;
+  color: var(--col-mid);
+  font-family: var(--font-display);
+  transition: color 0.2s;
+}
+
+.search-overlay-close:hover { color: var(--col-dark); }
+
+.search-overlay-form {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  border-bottom: 1.5px solid var(--col-dark);
+  padding-bottom: 12px;
+  width: 60%;
+  max-width: 640px;
+  min-width: 280px;
+}
+
+.search-overlay-input {
+  flex: 1;
+  background: none;
+  border: none;
+  outline: none;
+  font-family: var(--font-display);
+  font-size: clamp(28px, 4vw, 48px);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--col-dark);
+}
+
+.search-overlay-input::placeholder {
+  color: rgba(12,12,12,0.25);
+}
+
+.search-overlay-hint {
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  color: var(--col-muted);
+  margin-top: 20px;
+  text-transform: uppercase;
+}
+
+/* ── TOAST NOTIFICATION ────────────────────────────── */
+.toast {
+  position: fixed;
+  bottom: 28px;
+  right: 28px;
+  background: var(--col-dark);
+  color: var(--col-white);
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  padding: 14px 24px;
+  z-index: 999;
+  transform: translateY(16px);
+  opacity: 0;
+  transition: transform 0.3s var(--ease-out), opacity 0.3s;
+  pointer-events: none;
+}
+
+.toast.show {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+/* ── NAV SEARCH ACTIVE ─────────────────────────────── */
