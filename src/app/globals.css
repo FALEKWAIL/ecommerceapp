@@ -1,0 +1,5 @@
+:root {
+  --font-display: var(--font-display-google), 'Barlow Condensed', sans-serif;
+  --font-body: var(--font-body-google), 'Inter', sans-serif;
+  --font-ui: var(--font-ui-google), 'DM Sans', sans-serif;
+}
