@@ -77,7 +77,10 @@ export function OrderModal() {
             
             {/* Summary details */}
             <div className="order-summary-box">
-              <div className={`order-summary-img ${orderProduct.imgClass}`}></div>
+              <div 
+                className={`order-summary-img ${orderProduct.imgClass}`}
+                style={orderProduct.imgUrl ? { backgroundImage: `url(${orderProduct.imgUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' } : undefined}
+              ></div>
               <div className="order-summary-info">
                 <h3>{orderProduct.name}</h3>
                 {orderProduct.isFromCart ? (

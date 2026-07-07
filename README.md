@@ -1,36 +1,89 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# VORN — Men's Contemporary Fashion (Next.js Version)
 
-## Getting Started
+VORN is a premium, editorial-grade menswear e-commerce platform designed for presenting to potential stores and clients. Inspired by the high-contrast, minimalist aesthetics of modern retail giants (Zara, Pull & Bear, Bershka), VORN features clean typographic spacing, bold presentation grids, and smooth performance-minded react animations.
 
-First, run the development server:
+---
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## ✦ Core Features
+
+*   **Next.js App Router**: Built using the contemporary Next.js App Router pattern for optimal routing, performance, and developer experience.
+*   **Split-Screen Hero Layout**: Editorial lookbook hero dividing content (`1.15fr` and `0.85fr`) with full-bleed imagery and background text watermark layers to eliminate visual overlapping.
+*   **Dynamic Navigation Header**: An announcement bar that is fully dismissible. Dismissing the bar dynamically adjusts page margins and offsets via custom state handlers.
+*   **Search Overlay Drawer**: Interactive, sleek fullscreen search drawer using premium reveal transitions.
+*   **Interactive Cart Drawer & Toast Notifications**: Interactive cart drawer supporting real-time item additions, deletions, size tracking, and custom floating toast notifications.
+*   **Micro-Interactions & Tilt Effects**: Premium, performance-optimized card hovering with perspective tilting (desktop only) and custom cursor glow tracking.
+*   **React Context State Management**: Clean, centralized global state for managing cart items, wishlist status, search overlays, and UI feedback.
+
+---
+
+## ✦ Technology Stack
+
+*   **Core**: [Next.js](https://nextjs.org/) (v16+) with [React](https://react.dev/) (v19+)
+*   **Language**: TypeScript
+*   **Styling**: Pure CSS3 Custom Variables (`:root`), Flexbox/Grid layouts, and hardware-accelerated cubic bezier transitions.
+
+---
+
+## ✦ Directory Architecture
+
+```text
+clothing/
+├── public/             # Static public assets (logos, icons)
+├── assets/
+│   └── images/         # Premium model catalog photos
+├── src/
+│   └── app/
+│       ├── components/ # Reusable UI components (OrderModal, UIComponents, Cart, Search, etc.)
+│       ├── context/    # React Context providers for global UI states
+│       ├── css/        # Styling tokens, animation timing paths, and keyframes
+│       │   ├── style.css       # Core styles, design tokens, resets
+│       │   ├── components.css  # Component overlays, drawers, search drawers, toasts, cart cards
+│       │   └── animations.css  # Custom timing paths, keyframe behaviors, scroll-reveals
+│       ├── layout.tsx  # Root Layout containing fonts and context providers
+│       └── page.tsx    # Main Landing Page route component
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+---
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## ✦ Global Design System (Tokens)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+All styles are configured in `src/app/css/style.css` using standard CSS variables inside `:root`. To customize the site styling:
 
-## Learn More
+*   **Warm Off-White Background**: `--col-bg` (`#F0EDE8`)
+*   **Primary Deep Dark Tone**: `--col-dark` (`#0C0C0C`)
+*   **Brand Accent**: `--col-sand` (`#B8956A`)
+*   **Typography**:
+    *   Display headers: `Barlow Condensed`
+    *   Body text: `Inter`
+    *   Interactive UI elements: `DM Sans`
 
-To learn more about Next.js, take a look at the following resources:
+---
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## ✦ Running the Project Locally
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+To run the Next.js development server locally, follow these steps:
 
-## Deploy on Vercel
+### 1. Install Dependencies
+Make sure you have Node.js installed, then install the package dependencies:
+```bash
+npm install
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### 2. Start the Development Server
+Run the local dev server:
+```bash
+npm run dev
+```
+Once running, open your browser and navigate to: **`http://localhost:3000`**
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### 3. Build for Production
+To build and check for production compile correctness:
+```bash
+npm run build
+```
+
+### 4. Start Production Server
+To preview the production build locally:
+```bash
+npm run start
+```

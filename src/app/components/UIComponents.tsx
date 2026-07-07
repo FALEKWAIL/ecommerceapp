@@ -34,13 +34,13 @@ export function Navbar() {
   return (
     <nav className="nav" id="nav">
       <div className="nav-left">
-        <a href="#" className="nav-link" id="nav-men">MEN</a>
-        <a href="#" className="nav-link" id="nav-new">NEW IN</a>
-        <a href="#" className="nav-link" id="nav-collections">COLLECTIONS</a>
-        <a href="#" className="nav-link" id="nav-sale">SALE</a>
+        <a href="/products" className="nav-link" id="nav-men">MEN</a>
+        <a href="/new-in" className="nav-link" id="nav-new">NEW IN</a>
+        <a href="/products" className="nav-link" id="nav-collections">COLLECTIONS</a>
+        <a href="/products" className="nav-link" id="nav-sale">SALE</a>
       </div>
 
-      <a href="#" className="nav-logo" id="nav-logo" aria-label="VORN Home">
+      <a href="/" className="nav-logo" id="nav-logo" aria-label="VORN Home">
         VORN
       </a>
 
@@ -137,10 +137,10 @@ export function MobileMenu() {
         ✕
       </button>
       <div className="mobile-menu-links">
-        <a href="#" className="mobile-nav-link" onClick={() => setMobileMenuOpen(false)}>MEN</a>
-        <a href="#" className="mobile-nav-link" onClick={() => setMobileMenuOpen(false)}>NEW IN</a>
-        <a href="#" className="mobile-nav-link" onClick={() => setMobileMenuOpen(false)}>COLLECTIONS</a>
-        <a href="#" className="mobile-nav-link" onClick={() => setMobileMenuOpen(false)}>SALE</a>
+        <a href="/products" className="mobile-nav-link" onClick={() => setMobileMenuOpen(false)}>MEN</a>
+        <a href="/new-in" className="mobile-nav-link" onClick={() => setMobileMenuOpen(false)}>NEW IN</a>
+        <a href="/products" className="mobile-nav-link" onClick={() => setMobileMenuOpen(false)}>COLLECTIONS</a>
+        <a href="/products" className="mobile-nav-link" onClick={() => setMobileMenuOpen(false)}>SALE</a>
       </div>
       <div className="mobile-menu-bottom">
         <a href="#" onClick={(e) => { e.preventDefault(); setMobileMenuOpen(false); setSearchOpen(true); }}>Search</a>
@@ -408,7 +408,7 @@ export { OrderModal } from './OrderModal';
 
 // Wishlist Drawer Component
 export function WishlistDrawer() {
-  const { isWishlistOpen, setWishlistOpen, wishlist, toggleWishlist, addToCart } = useApp();
+  const { isWishlistOpen, setWishlistOpen, wishlist, toggleWishlist, addToCart, products } = useApp();
 
   useEffect(() => {
     if (isWishlistOpen) {
@@ -421,32 +421,21 @@ export function WishlistDrawer() {
     };
   }, [isWishlistOpen]);
 
-  const getProductImageClass = (name: string) => {
-    switch (name) {
-      case "Washed Canvas Overshirt": return "product-img-1";
-      case "Oversized Cargo Tee": return "product-img-2";
-      case "Relaxed Cargo Trousers": return "product-img-3";
-      case "Heavyweight Crew Sweat": return "product-img-4";
-      case "Urban Bomber Jacket": return "product-img-5";
-      case "Classic Slim Chinos": return "product-img-6";
-      case "Knitted Linen Polo": return "product-img-7";
-      case "Minimalist Leather Sneakers": return "product-img-8";
-      default: return "product-img-1";
+  const getProductImageProps = (name: string) => {
+    const p = products.find(prod => prod.name === name);
+    if (!p) return { className: 'product-img-1', style: undefined };
+    if (p.img_url) {
+      return {
+        className: '',
+        style: { backgroundImage: `url(${p.img_url})`, backgroundSize: 'cover', backgroundPosition: 'center', width: '50px', height: '62px' }
+      };
     }
+    return { className: p.img_class || 'product-img-1', style: { width: '50px', height: '62px' } };
   };
 
   const getProductPrice = (name: string) => {
-    switch (name) {
-      case "Washed Canvas Overshirt": return "$89.00";
-      case "Oversized Cargo Tee": return "$49.00";
-      case "Relaxed Cargo Trousers": return "$79.00";
-      case "Heavyweight Crew Sweat": return "$95.00";
-      case "Urban Bomber Jacket": return "$120.00";
-      case "Classic Slim Chinos": return "$65.00";
-      case "Knitted Linen Polo": return "$55.00";
-      case "Minimalist Leather Sneakers": return "$110.00";
-      default: return "$89.00";
-    }
+    const p = products.find(prod => prod.name === name);
+    return p ? p.price : '$89.00';
   };
 
   return (
@@ -479,7 +468,15 @@ export function WishlistDrawer() {
                   borderBottom: '1px solid var(--col-border)' 
                 }}
               >
-                <div className={`order-summary-img ${getProductImageClass(name)}`} style={{ width: '50px', height: '62px' }}></div>
+                {(() => {
+                  const props = getProductImageProps(name);
+                  return (
+                    <div 
+                      className={`order-summary-img ${props.className}`} 
+                      style={props.style}
+                    />
+                  );
+                })()}
                 <div style={{ flex: 1 }}>
                   <div style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: 'var(--col-dark)', fontWeight: 500 }}>
                     {name}
@@ -522,6 +519,200 @@ export function WishlistDrawer() {
         className={`cart-overlay ${isWishlistOpen ? 'active' : ''}`} 
         id="wishlist-overlay"
         onClick={() => setWishlistOpen(false)}
+      />
+    </>
+  );
+}
+
+// Product Details Drawer Component
+export function ProductDetailDrawer() {
+  const { isDetailOpen, setDetailOpen, detailProduct, addToCart, startDirectOrder } = useApp();
+  const [selectedSize, setSelectedSize] = useState('M');
+  const [selectedColor, setSelectedColor] = useState('');
+
+  useEffect(() => {
+    if (detailProduct) {
+      setSelectedSize(detailProduct.sizes[0] || 'M');
+      setSelectedColor(detailProduct.colors[0] || 'Default');
+    }
+  }, [detailProduct]);
+
+  useEffect(() => {
+    if (isDetailOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isDetailOpen]);
+
+  if (!detailProduct) return null;
+
+  return (
+    <>
+      <div 
+        className={`cart-drawer ${isDetailOpen ? 'open' : ''}`} 
+        id="detail-drawer" 
+        style={{ 
+          right: isDetailOpen ? '0' : '-420px', 
+          left: 'auto',
+          boxShadow: '-4px 0 40px rgba(0,0,0,0.12)',
+          width: '420px',
+          maxWidth: '100vw',
+          zIndex: 99999
+        }}
+      >
+        <div className="cart-drawer-header">
+          <h3>DÉTAILS DE L&apos;ARTICLE</h3>
+          <button className="cart-drawer-close" onClick={() => setDetailOpen(false)}>✕</button>
+        </div>
+        <div className="cart-drawer-body" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          {/* Image */}
+          <div 
+            className={detailProduct.img_url ? "" : `order-summary-img ${detailProduct.img_class}`} 
+            style={detailProduct.img_url ? { 
+              backgroundImage: `url(${detailProduct.img_url})`, 
+              backgroundSize: 'cover', 
+              backgroundPosition: 'center', 
+              width: '100%', 
+              height: '280px',
+              borderRadius: '2px'
+            } : { 
+              width: '100%', 
+              height: '280px',
+              borderRadius: '2px'
+            }}
+          />
+
+          {/* Info */}
+          <div>
+            <span style={{ fontFamily: 'var(--font-display)', fontSize: '10px', letterSpacing: '0.2em', color: 'var(--col-muted)' }}>
+              {detailProduct.category}
+            </span>
+            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '24px', fontWeight: 800, letterSpacing: '0.06em', margin: '4px 0 8px' }}>
+              {detailProduct.name}
+            </h2>
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <span style={{ fontFamily: 'var(--font-display)', fontSize: '18px', fontWeight: 700, color: 'var(--col-sand)' }}>
+                {detailProduct.price}
+              </span>
+              {detailProduct.original_price && (
+                <span style={{ fontFamily: 'var(--font-body)', fontSize: '14px', color: 'var(--col-muted)', textDecoration: 'line-through' }}>
+                  {detailProduct.original_price}
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Selectable Sizes */}
+          {detailProduct.sizes && detailProduct.sizes.length > 0 && (
+            <div>
+              <label style={{ display: 'block', fontFamily: 'var(--font-display)', fontSize: '10px', letterSpacing: '0.2em', color: 'var(--col-muted)', marginBottom: '8px' }}>
+                CHOISIR LA TAILLE
+              </label>
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                {detailProduct.sizes.map((size: string) => {
+                  const isSel = size === selectedSize;
+                  const isOut = detailProduct.out_of_stock_sizes?.includes(size);
+                  return (
+                    <button
+                      key={size}
+                      type="button"
+                      disabled={isOut}
+                      onClick={() => setSelectedSize(size)}
+                      style={{
+                        padding: '10px 14px',
+                        border: `1px solid ${isSel ? 'var(--col-dark)' : 'var(--col-border)'}`,
+                        background: isSel ? 'var(--col-dark)' : 'none',
+                        color: isSel ? 'var(--col-white)' : isOut ? 'var(--col-muted)' : 'var(--col-dark)',
+                        fontFamily: 'var(--font-display)',
+                        fontSize: '11px',
+                        cursor: isOut ? 'not-allowed' : 'pointer',
+                        opacity: isOut ? 0.35 : 1,
+                        textDecoration: isOut ? 'line-through' : 'none',
+                      }}
+                    >
+                      {size}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Selectable Colors */}
+          {detailProduct.colors && detailProduct.colors.length > 0 && (
+            <div>
+              <label style={{ display: 'block', fontFamily: 'var(--font-display)', fontSize: '10px', letterSpacing: '0.2em', color: 'var(--col-muted)', marginBottom: '8px' }}>
+                COULEURS DISPONIBLES
+              </label>
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                {detailProduct.colors.map((color: string) => {
+                  const isSel = color === selectedColor;
+                  return (
+                    <button
+                      key={color}
+                      type="button"
+                      onClick={() => setSelectedColor(color)}
+                      style={{
+                        padding: '8px 12px',
+                        border: `1px solid ${isSel ? 'var(--col-dark)' : 'var(--col-border)'}`,
+                        background: isSel ? 'var(--col-dark)' : 'none',
+                        color: isSel ? 'var(--col-white)' : 'var(--col-dark)',
+                        fontFamily: 'var(--font-body)',
+                        fontSize: '12px',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      {color}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Actions */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '10px' }}>
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={() => {
+                addToCart(detailProduct.name, selectedSize);
+                setDetailOpen(false);
+              }}
+              style={{ width: '100%', border: 'none', cursor: 'pointer', display: 'block', textAlign: 'center' }}
+            >
+              AJOUTER AU PANIER
+            </button>
+            <button
+              type="button"
+              className="btn btn-secondary"
+              onClick={() => {
+                startDirectOrder({
+                  name: detailProduct.name,
+                  price: detailProduct.price,
+                  imgClass: detailProduct.img_class || 'product-img-1',
+                  imgUrl: detailProduct.img_url,
+                  sizes: detailProduct.sizes,
+                  colors: detailProduct.colors,
+                });
+                setDetailOpen(false);
+              }}
+              style={{ width: '100%', cursor: 'pointer', display: 'block', textAlign: 'center' }}
+            >
+              COMMANDER MAINTENANT (CASH)
+            </button>
+          </div>
+        </div>
+      </div>
+      <div 
+        className={`cart-overlay ${isDetailOpen ? 'active' : ''}`} 
+        id="detail-overlay"
+        onClick={() => setDetailOpen(false)}
+        style={{ zIndex: 99998 }}
       />
     </>
   );

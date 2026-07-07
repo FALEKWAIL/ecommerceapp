@@ -13,8 +13,9 @@ interface ProductCardProps {
   sizes: string[];
   selectedSize: string;
   outOfStockSizes?: string[];
-  label?: 'NEW' | 'SALE';
+  label?: 'NEW' | 'SALE' | null;
   imgClass: string;
+  imgUrl?: string;
   colors: string[];
 }
 
@@ -28,9 +29,10 @@ function ProductCard({
   outOfStockSizes = [],
   label,
   imgClass,
+  imgUrl,
   colors,
 }: ProductCardProps) {
-  const { addToCart, toggleWishlist, wishlist, startDirectOrder } = useApp();
+  const { addToCart, toggleWishlist, wishlist, startDirectOrder, openDetail } = useApp();
   const [isAdded, setIsAdded] = useState(false);
   const isWishlisted = wishlist.includes(name);
 
@@ -62,7 +64,23 @@ function ProductCard({
       name,
       price,
       imgClass,
+      imgUrl,
       sizes,
+      colors,
+    });
+  };
+
+  const handleCardClick = () => {
+    openDetail({
+      name,
+      category,
+      price,
+      original_price: originalPrice,
+      sizes,
+      out_of_stock_sizes: outOfStockSizes,
+      label,
+      img_class: imgClass,
+      img_url: imgUrl,
       colors,
     });
   };
@@ -72,10 +90,14 @@ function ProductCard({
       className="product-card"
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
-      style={{ transition: 'transform 0.1s ease-out' }}
+      onClick={handleCardClick}
+      style={{ transition: 'transform 0.1s ease-out', cursor: 'pointer' }}
     >
       <div className="product-img-wrap">
-        <div className={`product-img ${imgClass}`}>
+        <div 
+          className={`product-img ${imgClass}`}
+          style={imgUrl ? { backgroundImage: `url(${imgUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' } : undefined}
+        >
           <div className="product-img-overlay"></div>
           {label && (
             <div className={`product-label ${label === 'SALE' ? 'product-label-sale' : ''}`}>
@@ -144,13 +166,13 @@ function noneOrColor(isActive: boolean) {
   return isActive ? 'currentColor' : 'none';
 }
 
-// ── MAIN PAGE COMPONENT ────────────────────────────────
 export default function Home() {
-  const { showToast } = useApp();
+  const { showToast, products, loadingProducts } = useApp();
   const [translateY, setTranslateY] = useState(0);
   const [email, setEmail] = useState('');
   const [formSuccess, setFormSuccess] = useState(false);
   const [heroImageLoaded, setHeroImageLoaded] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(4);
 
   // Parallax Hero Letterform
   useEffect(() => {
@@ -198,7 +220,7 @@ export default function Home() {
     return () => {
       observer.disconnect();
     };
-  }, []);
+  }, [products]);
 
   const handleNewsletter = (e: React.FormEvent) => {
     e.preventDefault();
@@ -327,8 +349,8 @@ export default function Home() {
             </svg>
           </div>
           <div className="trust-text">
-            <strong>FREE DELIVERY</strong>
-            <span>On all orders, always</span>
+            <strong>LIVRAISON GRATUITE</strong>
+            <span>Sur toutes vos commandes</span>
           </div>
         </div>
 
@@ -343,22 +365,8 @@ export default function Home() {
             </svg>
           </div>
           <div className="trust-text">
-            <strong>EASY RETURNS</strong>
-            <span>Hassle-free within 30 days</span>
-          </div>
-        </div>
-
-        <div className="trust-divider"></div>
-
-        <div className="trust-item">
-          <div className="trust-icon">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-            </svg>
-          </div>
-          <div className="trust-text">
-            <strong>QUALITY ASSURED</strong>
-            <span>Every piece, crafted to last</span>
+            <strong>RETOURS SOUS 30 JOURS</strong>
+            <span>Échanges simples et rapides</span>
           </div>
         </div>
 
@@ -372,8 +380,8 @@ export default function Home() {
             </svg>
           </div>
           <div className="trust-text">
-            <strong>SECURE PAYMENT</strong>
-            <span>100% encrypted checkout</span>
+            <strong>PAIEMENT SÉCURISÉ</strong>
+            <span>Checkout 100% sécurisé</span>
           </div>
         </div>
       </section>
@@ -382,58 +390,39 @@ export default function Home() {
       <section className="products" id="products">
         <div className="products-header">
           <h2 className="products-title">BEST OF VORN</h2>
-          <a href="#" className="products-view-all" id="link-view-all">VIEW ALL</a>
+          <a 
+            href="/products" 
+            className="products-view-all" 
+            id="link-view-all"
+          >
+            VIEW ALL
+          </a>
         </div>
 
         <div className="products-grid" id="products-grid">
-          <ProductCard
-            id={1}
-            name="Washed Canvas Overshirt"
-            category="OUTERWEAR"
-            price="$89.00"
-            sizes={['XS', 'S', 'M', 'L', 'XL']}
-            selectedSize="M"
-            label="NEW"
-            imgClass="product-img-1"
-            colors={['Olive', 'Noir', 'Ecru']}
-          />
-
-          <ProductCard
-            id={2}
-            name="Oversized Cargo Tee"
-            category="TOPS"
-            price="$49.00"
-            originalPrice="$69.00"
-            sizes={['S', 'M', 'L', 'XL', 'XXL']}
-            selectedSize="M"
-            outOfStockSizes={['XXL']}
-            label="SALE"
-            imgClass="product-img-2"
-            colors={['Sable', 'Noir', 'Kaki']}
-          />
-
-          <ProductCard
-            id={3}
-            name="Relaxed Cargo Trousers"
-            category="BOTTOMS"
-            price="$79.00"
-            sizes={['28', '30', '32', '34', '36']}
-            selectedSize="32"
-            label="NEW"
-            imgClass="product-img-3"
-            colors={['Noir', 'Khaki', 'Sauge']}
-          />
-
-          <ProductCard
-            id={4}
-            name="Heavyweight Crew Sweat"
-            category="KNITWEAR"
-            price="$95.00"
-            sizes={['XS', 'S', 'M', 'L', 'XL']}
-            selectedSize="L"
-            imgClass="product-img-4"
-            colors={['Gris', 'Noir', 'Ecru']}
-          />
+          {loadingProducts ? (
+            <div style={{ gridColumn: '1 / -1', padding: '60px 0', textAlign: 'center', fontFamily: 'var(--font-display)', fontSize: '12px', letterSpacing: '0.2em', color: 'var(--col-muted)' }}>
+              CHARGEMENT DES ARTICLES...
+            </div>
+          ) : (
+            products.slice(0, 4).map((p: any) => (
+              <ProductCard
+                key={p.id}
+                id={p.id}
+                name={p.name}
+                category={p.category}
+                price={p.price}
+                originalPrice={p.original_price}
+                sizes={p.sizes}
+                selectedSize={p.sizes[0] || 'M'}
+                outOfStockSizes={p.out_of_stock_sizes}
+                label={p.label}
+                imgClass={p.img_class}
+                imgUrl={p.img_url}
+                colors={p.colors}
+              />
+            ))
+          )}
         </div>
       </section>
 
@@ -444,60 +433,43 @@ export default function Home() {
         </div>
 
         <div className="products-grid" id="all-products-grid">
-          <ProductCard
-            id={5}
-            name="Urban Bomber Jacket"
-            category="OUTERWEAR"
-            price="$120.00"
-            sizes={['S', 'M', 'L', 'XL']}
-            selectedSize="M"
-            label="NEW"
-            imgClass="product-img-5"
-            colors={['Noir', 'Bleu Marine', 'Olive']}
-          />
-
-          <ProductCard
-            id={6}
-            name="Classic Slim Chinos"
-            category="BOTTOMS"
-            price="$65.00"
-            sizes={['30', '32', '34', '36']}
-            selectedSize="32"
-            imgClass="product-img-6"
-            colors={['Khaki', 'Bleu Marine', 'Sable']}
-          />
-
-          <ProductCard
-            id={7}
-            name="Knitted Linen Polo"
-            category="TOPS"
-            price="$55.00"
-            sizes={['S', 'M', 'L', 'XL']}
-            selectedSize="M"
-            imgClass="product-img-7"
-            colors={['Sable', 'Ecru', 'Noir']}
-          />
-
-          <ProductCard
-            id={8}
-            name="Minimalist Leather Sneakers"
-            category="SHOES"
-            price="$110.00"
-            sizes={['40', '41', '42', '43', '44']}
-            selectedSize="42"
-            label="NEW"
-            imgClass="product-img-8"
-            colors={['Blanc', 'Noir']}
-          />
+          {loadingProducts ? (
+            <div style={{ gridColumn: '1 / -1', padding: '60px 0', textAlign: 'center', fontFamily: 'var(--font-display)', fontSize: '12px', letterSpacing: '0.2em', color: 'var(--col-muted)' }}>
+              CHARGEMENT DES ARTICLES...
+            </div>
+          ) : (
+            products.slice(0, visibleCount).map((p: any) => (
+              <ProductCard
+                key={p.id}
+                id={p.id}
+                name={p.name}
+                category={p.category}
+                price={p.price}
+                originalPrice={p.original_price}
+                sizes={p.sizes}
+                selectedSize={p.sizes[0] || 'M'}
+                outOfStockSizes={p.out_of_stock_sizes}
+                label={p.label}
+                imgClass={p.img_class}
+                imgUrl={p.img_url}
+                colors={p.colors}
+              />
+            ))
+          )}
         </div>
 
-        <div style={{ display: 'flex', justifyContent: 'center', marginTop: '48px' }}>
-          <a href="#" className="btn btn-primary" style={{ padding: '16px 40px', letterSpacing: '0.18em' }}>
-            VOIR PLUS D&apos;ARTICLES
-          </a>
-        </div>
+        {products.length > visibleCount && (
+          <div style={{ display: 'flex', justifyContent: 'center', marginTop: '48px' }}>
+            <button 
+              onClick={() => setVisibleCount(prev => prev + 4)}
+              className="btn btn-primary" 
+              style={{ padding: '16px 40px', letterSpacing: '0.18em', border: 'none', cursor: 'pointer' }}
+            >
+              VOIR PLUS D&apos;ARTICLES
+            </button>
+          </div>
+        )}
       </section>
-
       {/* ───── MARQUEE STRIP ───── */}
       <div className="marquee-wrap" aria-hidden="true">
         <div className="marquee-track">

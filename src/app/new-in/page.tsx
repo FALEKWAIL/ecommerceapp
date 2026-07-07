@@ -13,8 +13,9 @@ interface ProductCardProps {
   sizes: string[];
   selectedSize: string;
   outOfStockSizes?: string[];
-  label?: 'NEW' | 'SALE';
+  label?: 'NEW' | 'SALE' | null;
   imgClass: string;
+  imgUrl?: string;
   colors: string[];
 }
 
@@ -28,9 +29,10 @@ function ProductCard({
   outOfStockSizes = [],
   label,
   imgClass,
+  imgUrl,
   colors,
 }: ProductCardProps) {
-  const { addToCart, toggleWishlist, wishlist, startDirectOrder } = useApp();
+  const { addToCart, toggleWishlist, wishlist, startDirectOrder, openDetail } = useApp();
   const [isAdded, setIsAdded] = React.useState(false);
   const isWishlisted = wishlist.includes(name);
 
@@ -61,7 +63,23 @@ function ProductCard({
       name,
       price,
       imgClass,
+      imgUrl,
       sizes,
+      colors,
+    });
+  };
+
+  const handleCardClick = () => {
+    openDetail({
+      name,
+      category,
+      price,
+      original_price: originalPrice,
+      sizes,
+      out_of_stock_sizes: outOfStockSizes,
+      label,
+      img_class: imgClass,
+      img_url: imgUrl,
       colors,
     });
   };
@@ -71,10 +89,14 @@ function ProductCard({
       className="product-card"
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
-      style={{ transition: 'transform 0.1s ease-out' }}
+      onClick={handleCardClick}
+      style={{ transition: 'transform 0.1s ease-out', cursor: 'pointer' }}
     >
       <div className="product-img-wrap">
-        <div className={`product-img ${imgClass}`}>
+        <div 
+          className={`product-img ${imgClass}`}
+          style={imgUrl ? { backgroundImage: `url(${imgUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' } : undefined}
+        >
           <div className="product-img-overlay"></div>
           {label && (
             <div className={`product-label ${label === 'SALE' ? 'product-label-sale' : ''}`}>
@@ -145,6 +167,8 @@ function noneOrColor(isActive: boolean) {
 
 // ── MAIN PAGE COMPONENT ────────────────────────────────
 export default function NewInPage() {
+  const { products, loadingProducts } = useApp();
+
   // Set reveal class logic
   useEffect(() => {
     const observer = new IntersectionObserver((entries) => {
@@ -160,7 +184,10 @@ export default function NewInPage() {
 
     document.querySelectorAll('[data-reveal]').forEach(el => observer.observe(el));
     return () => observer.disconnect();
-  }, []);
+  }, [products]);
+
+  // Filter products where label is NEW
+  const newProducts = products.filter((p: any) => p.label === 'NEW');
 
   return (
     <main style={{ paddingTop: 'calc(var(--nav-h) + var(--announce-h))', minHeight: '80vh', background: 'var(--col-bg)' }}>
@@ -180,53 +207,33 @@ export default function NewInPage() {
       {/* ───── NEW ARRIVALS GRID ───── */}
       <section className="products" style={{ padding: '60px 40px 100px' }}>
         <div className="products-grid">
-          <ProductCard
-            id={1}
-            name="Washed Canvas Overshirt"
-            category="OUTERWEAR"
-            price="$89.00"
-            sizes={['XS', 'S', 'M', 'L', 'XL']}
-            selectedSize="M"
-            label="NEW"
-            imgClass="product-img-1"
-            colors={['Olive', 'Noir', 'Ecru']}
-          />
-
-          <ProductCard
-            id={3}
-            name="Relaxed Cargo Trousers"
-            category="BOTTOMS"
-            price="$79.00"
-            sizes={['28', '30', '32', '34', '36']}
-            selectedSize="32"
-            label="NEW"
-            imgClass="product-img-3"
-            colors={['Noir', 'Khaki', 'Sauge']}
-          />
-
-          <ProductCard
-            id={5}
-            name="Urban Bomber Jacket"
-            category="OUTERWEAR"
-            price="$120.00"
-            sizes={['S', 'M', 'L', 'XL']}
-            selectedSize="M"
-            label="NEW"
-            imgClass="product-img-5"
-            colors={['Noir', 'Bleu Marine', 'Olive']}
-          />
-
-          <ProductCard
-            id={8}
-            name="Minimalist Leather Sneakers"
-            category="SHOES"
-            price="$110.00"
-            sizes={['40', '41', '42', '43', '44']}
-            selectedSize="42"
-            label="NEW"
-            imgClass="product-img-8"
-            colors={['Blanc', 'Noir']}
-          />
+          {loadingProducts ? (
+            <div style={{ gridColumn: '1 / -1', padding: '60px 0', textAlign: 'center', fontFamily: 'var(--font-display)', fontSize: '12px', letterSpacing: '0.2em', color: 'var(--col-muted)' }}>
+              CHARGEMENT DES NOUVEAUTÉS...
+            </div>
+          ) : newProducts.length === 0 ? (
+            <div style={{ gridColumn: '1 / -1', padding: '60px 0', textAlign: 'center', fontFamily: 'var(--font-display)', fontSize: '12px', letterSpacing: '0.2em', color: 'var(--col-muted)' }}>
+              AUCUNE NOUVEAUTÉ POUR LE MOMENT
+            </div>
+          ) : (
+            newProducts.map((p: any) => (
+              <ProductCard
+                key={p.id}
+                id={p.id}
+                name={p.name}
+                category={p.category}
+                price={p.price}
+                originalPrice={p.original_price}
+                sizes={p.sizes}
+                selectedSize={p.sizes[0] || 'M'}
+                outOfStockSizes={p.out_of_stock_sizes}
+                label={p.label}
+                imgClass={p.img_class}
+                imgUrl={p.img_url}
+                colors={p.colors}
+              />
+            ))
+          )}
         </div>
       </section>
     </main>
