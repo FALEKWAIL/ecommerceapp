@@ -739,7 +739,7 @@ ul { list-style: none; }
   top: 12px;
   right: 12px;
   z-index: 5;
-  background: rgba(255,255,255,0.9);
+  background: rgba(255, 255, 255, 0.9);
   border-radius: 50%;
   width: 32px;
   height: 32px;
@@ -747,17 +747,28 @@ ul { list-style: none; }
   align-items: center;
   justify-content: center;
   color: var(--col-dark);
-  opacity: 0;
-  transform: translateY(-4px);
-  transition: opacity 0.25s, transform 0.25s, background 0.2s;
+  opacity: 0.75;
+  transform: translateY(0);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+  transition: opacity 0.25s, transform 0.25s, background 0.2s, color 0.2s;
 }
 
 .product-card:hover .product-wishlist {
   opacity: 1;
-  transform: translateY(0);
+  transform: scale(1.05);
 }
 
-.product-wishlist:hover { background: var(--col-dark); color: var(--col-white); }
+.product-wishlist:hover {
+  background: var(--col-dark);
+  color: var(--col-white);
+}
+
+@media (hover: none) {
+  .product-wishlist {
+    opacity: 1 !important;
+    transform: translateY(0) !important;
+  }
+}
 
 .product-quick-add {
   position: absolute;
@@ -1210,3 +1221,45 @@ ul { list-style: none; }
   transition: transform 0.15s linear;
   will-change: transform;
 }
+
+/* ── FULL BACKGROUND PAGE STYLES ──────────────────── */
+body.full-bg-page {
+  background: #0C0C0C !important;
+}
+
+body.full-bg-page .header-container {
+  background: rgba(12, 12, 12, 0.45) !important;
+  backdrop-filter: blur(20px) saturate(160%) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+body.full-bg-page .header-container.scrolled {
+  background: rgba(12, 12, 12, 0.8) !important;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+}
+
+body.full-bg-page .nav-link,
+body.full-bg-page .nav-logo,
+body.full-bg-page .nav-icon-btn {
+  color: #FFFFFF !important;
+}
+
+body.full-bg-page .nav-link::after {
+  background: #FFFFFF !important;
+}
+
+body.full-bg-page .nav-hamburger span {
+  background: #FFFFFF !important;
+}
+
+body.full-bg-page .announce-bar {
+  background: #000000 !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+body.full-bg-page .footer {
+  background: rgba(12, 12, 12, 0.85) !important;
+  backdrop-filter: blur(10px) !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+

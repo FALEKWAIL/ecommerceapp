@@ -163,10 +163,22 @@ export default function ProductsPage() {
   const { products, loadingProducts } = useApp();
   const [selectedCategory, setSelectedCategory] = useState('ALL');
 
-  // Filter products by selected category
+  // Read URL search parameter for category filter client-side
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const cat = params.get('category');
+    if (cat) {
+      const upperCat = cat.toUpperCase();
+      setSelectedCategory(upperCat);
+    }
+  }, []);
+
+  // Filter products by selected category or sale label
   const filteredProducts = selectedCategory === 'ALL'
     ? products
-    : products.filter((p: any) => p.category === selectedCategory);
+    : selectedCategory === 'SALE'
+      ? products.filter((p: any) => p.label === 'SALE')
+      : products.filter((p: any) => p.category === selectedCategory);
 
   // Set reveal animations
   useEffect(() => {
@@ -185,7 +197,7 @@ export default function ProductsPage() {
     return () => observer.disconnect();
   }, [filteredProducts]);
 
-  const categories = ['ALL', 'OUTERWEAR', 'TOPS', 'BOTTOMS', 'KNITWEAR', 'STREETWEAR', 'ACCESSORIES'];
+  const categories = ['ALL', 'OUTERWEAR', 'TOPS', 'BOTTOMS', 'KNITWEAR', 'STREETWEAR', 'ACCESSORIES', 'SALE'];
 
   return (
     <main style={{ paddingTop: 'calc(var(--nav-h) + var(--announce-h))', minHeight: '85vh', background: 'var(--col-bg)' }}>

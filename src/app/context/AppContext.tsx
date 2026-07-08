@@ -24,6 +24,7 @@ type AppContextType = {
   addToCart: (name: string, size?: string) => void;
   removeFromCart: (index: number) => void;
   clearCart: () => void;
+  updateCartQty: (index: number, qty: number) => void;
   wishlist: string[];
   toggleWishlist: (name: string) => void;
   isCartOpen: boolean;
@@ -184,7 +185,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [products, setProducts] = useState<any[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(true);
 
-  // Load announce status from sessionStorage
+  // Load announce status, cart, and wishlist from storage on mount
   useEffect(() => {
     const closed = sessionStorage.getItem('vorn_announce_closed');
     if (closed) {
@@ -193,7 +194,35 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     } else {
       document.documentElement.style.setProperty('--announce-h', '36px');
     }
+
+    const savedCart = localStorage.getItem('vorn_cart');
+    if (savedCart) {
+      try {
+        setCartItems(JSON.parse(savedCart));
+      } catch (e) {
+        console.error('Failed to parse cart items:', e);
+      }
+    }
+
+    const savedWishlist = localStorage.getItem('vorn_wishlist');
+    if (savedWishlist) {
+      try {
+        setWishlist(JSON.parse(savedWishlist));
+      } catch (e) {
+        console.error('Failed to parse wishlist items:', e);
+      }
+    }
   }, []);
+
+  // Save cart to local storage on changes
+  useEffect(() => {
+    localStorage.setItem('vorn_cart', JSON.stringify(cartItems));
+  }, [cartItems]);
+
+  // Save wishlist to local storage on changes
+  useEffect(() => {
+    localStorage.setItem('vorn_wishlist', JSON.stringify(wishlist));
+  }, [wishlist]);
 
   // Fetch active products from Supabase
   useEffect(() => {
@@ -239,12 +268,35 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   };
 
   const addToCart = (name: string, size = 'M') => {
-    setCartItems((prev) => [...prev, { name, size, qty: 1 }]);
+    setCartItems((prev) => {
+      const existingIdx = prev.findIndex(item => item.name === name && item.size === size);
+      if (existingIdx > -1) {
+        const updated = [...prev];
+        updated[existingIdx] = {
+          ...updated[existingIdx],
+          qty: updated[existingIdx].qty + 1
+        };
+        return updated;
+      }
+      return [...prev, { name, size, qty: 1 }];
+    });
     showToast(`${name} added to your bag.`);
   };
 
   const removeFromCart = (index: number) => {
     setCartItems((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const updateCartQty = (index: number, qty: number) => {
+    if (qty <= 0) {
+      removeFromCart(index);
+      return;
+    }
+    setCartItems((prev) => {
+      const updated = [...prev];
+      updated[index] = { ...updated[index], qty };
+      return updated;
+    });
   };
 
   const clearCart = () => {
@@ -323,6 +375,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         addToCart,
         removeFromCart,
         clearCart,
+        updateCartQty,
         wishlist,
         toggleWishlist,
         isCartOpen,

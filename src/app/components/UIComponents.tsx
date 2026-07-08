@@ -45,29 +45,29 @@ export function Navbar() {
       </a>
 
       <div className="nav-right">
-        <button className="nav-icon-btn" onClick={() => setSearchOpen(true)} aria-label="Search">
+        <a href="/search" className="nav-icon-btn" aria-label="Search">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
             <circle cx="11" cy="11" r="8" />
             <path d="m21 21-4.35-4.35" />
           </svg>
           <span>SEARCH</span>
-        </button>
-        <button className="nav-icon-btn" aria-label="Account">
+        </a>
+        <a href="#" className="nav-icon-btn" aria-label="Account">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
             <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
             <circle cx="12" cy="7" r="4" />
           </svg>
           <span>ACCOUNT</span>
-        </button>
-        <button className="nav-icon-btn" aria-label="Wishlist">
+        </a>
+        <a href="/wishlist" className="nav-icon-btn" aria-label="Wishlist">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
             <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
           </svg>
           <span>WISHLIST</span>
-        </button>
-        <button 
+        </a>
+        <a 
+          href="/cart"
           className="nav-icon-btn nav-cart" 
-          onClick={() => setCartOpen(true)}
           aria-label="Cart"
         >
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
@@ -76,7 +76,7 @@ export function Navbar() {
             <path d="M16 10a4 4 0 0 1-8 0" />
           </svg>
           <span>CART (<span id="cart-count">{cartItems.length}</span>)</span>
-        </button>
+        </a>
       </div>
 
       {/* Mobile hamburger */}
@@ -143,9 +143,10 @@ export function MobileMenu() {
         <a href="/products" className="mobile-nav-link" onClick={() => setMobileMenuOpen(false)}>SALE</a>
       </div>
       <div className="mobile-menu-bottom">
-        <a href="#" onClick={(e) => { e.preventDefault(); setMobileMenuOpen(false); setSearchOpen(true); }}>Search</a>
+        <a href="/search" onClick={() => setMobileMenuOpen(false)}>Search</a>
         <a href="#" onClick={(e) => { e.preventDefault(); }}>Account</a>
-        <a href="#" onClick={(e) => { e.preventDefault(); setMobileMenuOpen(false); setWishlistOpen(true); }}>Wishlist</a>
+        <a href="/wishlist" onClick={() => setMobileMenuOpen(false)}>Wishlist</a>
+        <a href="/cart" onClick={() => setMobileMenuOpen(false)}>Cart</a>
       </div>
     </div>
   );
@@ -326,7 +327,7 @@ export function Footer() {
     <footer className="footer" id="footer">
       <div className="footer-top">
         <div className="footer-brand">
-          <a href="#" className="footer-logo">VORN</a>
+          <a href="/" className="footer-logo">VORN</a>
           <p className="footer-brand-desc">
             Contemporary menswear for those who move with intention. Crafted with purpose. Worn with conviction.
           </p>
@@ -356,36 +357,36 @@ export function Footer() {
         <div className="footer-col">
           <h4>SHOP</h4>
           <ul>
-            <li><a href="#">New In</a></li>
-            <li><a href="#">Tops &amp; Tees</a></li>
-            <li><a href="#">Outerwear</a></li>
-            <li><a href="#">Bottoms</a></li>
-            <li><a href="#">Knitwear</a></li>
-            <li><a href="#">Sale</a></li>
+            <li><a href="/new-in">New In</a></li>
+            <li><a href="/products?category=TOPS">Tops &amp; Tees</a></li>
+            <li><a href="/products?category=OUTERWEAR">Outerwear</a></li>
+            <li><a href="/products?category=BOTTOMS">Bottoms</a></li>
+            <li><a href="/products?category=KNITWEAR">Knitwear</a></li>
+            <li><a href="/products?category=SALE">Sale</a></li>
           </ul>
         </div>
 
         <div className="footer-col">
           <h4>HELP</h4>
           <ul>
-            <li><a href="#">Size Guide</a></li>
-            <li><a href="#">Delivery Info</a></li>
-            <li><a href="#">Returns &amp; Exchanges</a></li>
-            <li><a href="#">Track My Order</a></li>
-            <li><a href="#">Contact Us</a></li>
-            <li><a href="#">FAQ</a></li>
+            <li><a href="/help/size-guide">Size Guide</a></li>
+            <li><a href="/help/delivery-info">Delivery Info</a></li>
+            <li><a href="/help/returns-exchanges">Returns &amp; Exchanges</a></li>
+            <li><a href="/help/track-my-order">Track My Order</a></li>
+            <li><a href="/help/contact-us">Contact Us</a></li>
+            <li><a href="/help/faq">FAQ</a></li>
           </ul>
         </div>
 
         <div className="footer-col">
           <h4>ABOUT</h4>
           <ul>
-            <li><a href="#">Our Story</a></li>
-            <li><a href="#">Sustainability</a></li>
-            <li><a href="#">Careers</a></li>
-            <li><a href="#">Press</a></li>
-            <li><a href="#">Privacy Policy</a></li>
-            <li><a href="#">Terms of Service</a></li>
+            <li><a href="/about/our-story">Our Story</a></li>
+            <li><a href="/about/sustainability">Sustainability</a></li>
+            <li><a href="/about/careers">Careers</a></li>
+            <li><a href="/about/press">Press</a></li>
+            <li><a href="/about/privacy-policy">Privacy Policy</a></li>
+            <li><a href="/about/terms-of-service">Terms of Service</a></li>
           </ul>
         </div>
       </div>

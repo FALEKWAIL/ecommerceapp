@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 
 export function OrderModal() {
-  const { isOrderOpen, setOrderOpen, orderProduct, placeOrder, cartItems } = useApp();
+  const { isOrderOpen, setOrderOpen, orderProduct, placeOrder, cartItems, products } = useApp();
   
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
@@ -14,6 +14,9 @@ export function OrderModal() {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isPlacing, setIsPlacing] = useState(false);
 
+  // Snapshot of items being ordered, to preserve display after cart clears
+  const [orderedItemsSnapshot, setOrderedItemsSnapshot] = useState<any[]>([]);
+
   // Reset states when the modal is opened for a new product
   useEffect(() => {
     if (orderProduct) {
@@ -22,10 +25,34 @@ export function OrderModal() {
       setIsSubmitted(false);
       setName('');
       setPhone('');
+
+      if (orderProduct.isFromCart) {
+        setOrderedItemsSnapshot([...cartItems]);
+      } else {
+        setOrderedItemsSnapshot([{ name: orderProduct.name, size: orderProduct.sizes[0] || 'M', qty: 1 }]);
+      }
     }
-  }, [orderProduct]);
+  }, [orderProduct, cartItems]);
 
   if (!isOrderOpen || !orderProduct) return null;
+
+  // Retrieve price/details for a product name
+  const getProductDetails = (name: string) => {
+    const p = products.find(prod => prod.name === name);
+    if (p) {
+      const priceVal = parseFloat(p.price.replace('$', '')) || 0;
+      return { priceStr: p.price, priceVal };
+    }
+    return { priceStr: '$0.00', priceVal: 0 };
+  };
+
+  // Calculate order total
+  const getOrderTotal = () => {
+    return orderedItemsSnapshot.reduce((acc, item) => {
+      const { priceVal } = getProductDetails(item.name);
+      return acc + (priceVal * item.qty);
+    }, 0);
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -75,19 +102,41 @@ export function OrderModal() {
             <h2 className="order-title">COMMANDE DIRECTE</h2>
             <p className="order-subtitle">Finalisez votre commande rapidement. Paiement cash à la livraison.</p>
             
-            {/* Summary details */}
-            <div className="order-summary-box">
-              <div 
-                className={`order-summary-img ${orderProduct.imgClass}`}
-                style={orderProduct.imgUrl ? { backgroundImage: `url(${orderProduct.imgUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' } : undefined}
-              ></div>
-              <div className="order-summary-info">
-                <h3>{orderProduct.name}</h3>
-                {orderProduct.isFromCart ? (
-                  <p className="order-summary-price">{cartItems.length} article(s) dans le sac</p>
-                ) : (
-                  <p className="order-summary-price">{orderProduct.price}</p>
-                )}
+            {/* Detailed Summary Box */}
+            <div className="order-summary-box" style={{ display: 'flex', flexDirection: 'column', alignItems: 'stretch', gap: '14px' }}>
+              <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+                <div 
+                  className={`order-summary-img ${orderProduct.imgClass}`}
+                  style={orderProduct.imgUrl ? { backgroundImage: `url(${orderProduct.imgUrl})`, backgroundSize: 'cover', backgroundPosition: 'center', width: '50px', height: '62px' } : { width: '50px', height: '62px' }}
+                ></div>
+                <div className="order-summary-info" style={{ flex: 1 }}>
+                  <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 700 }}>
+                    {orderProduct.isFromCart ? 'VOTRE PANIER' : orderProduct.name}
+                  </h3>
+                  <p className="order-summary-price" style={{ color: 'var(--col-sand)', fontWeight: 700, fontSize: '13px', margin: '4px 0 0 0' }}>
+                    TOTAL: ${getOrderTotal().toFixed(2)}
+                  </p>
+                </div>
+              </div>
+
+              {/* Confirmation of ordered items */}
+              <div style={{ borderTop: '1px solid var(--col-border)', paddingTop: '10px', marginTop: '2px' }}>
+                <label style={{ display: 'block', fontFamily: 'var(--font-display)', fontSize: '9px', letterSpacing: '0.1em', color: 'var(--col-muted)', marginBottom: '8px', fontWeight: 700 }}>
+                  ARTICLES À CONFIRMER:
+                </label>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  {orderedItemsSnapshot.map((item, i) => {
+                    const { priceStr } = getProductDetails(item.name);
+                    return (
+                      <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', color: 'var(--col-dark)' }}>
+                        <span>
+                          <strong>{item.qty}x</strong> {item.name} <span style={{ fontSize: '11px', color: 'var(--col-muted)' }}>(Taille {item.size})</span>
+                        </span>
+                        <span style={{ fontFamily: 'var(--font-display)', fontWeight: 600 }}>{priceStr}</span>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             </div>
 
@@ -150,8 +199,6 @@ export function OrderModal() {
                 className="form-input"
                 placeholder="Ex: 0555123456"
                 required
-                pattern="(05|06|07)[0-9]{8}"
-                title="Veuillez entrer un numéro de téléphone valide (10 chiffres, commençant par 05, 06 ou 07)"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
               />
@@ -177,12 +224,30 @@ export function OrderModal() {
           </form>
         ) : (
           <div className="order-success-view">
-            <div className="success-icon">✓</div>
-            <h2>COMMANDE CONFIRMÉE !</h2>
-            <p className="success-thankyou">Merci, votre commande est bien enregistrée.</p>
-            <p className="success-details">
-              Votre commande pour <strong>{orderProduct.name}</strong> a été validée. Nous allons vous contacter par téléphone au <strong>{phone}</strong> très prochainement pour confirmer l&apos;expédition de votre colis vers la wilaya de <strong>{wilaya}</strong>.
+            <div className="success-icon" style={{ background: 'var(--col-sand)', color: 'var(--col-dark)' }}>✓</div>
+            <h2 style={{ color: 'var(--col-sand)', fontFamily: 'var(--font-display)', fontSize: '24px', letterSpacing: '0.08em', marginBottom: '8px' }}>
+              C&apos;EST FAIT ! / DONE !
+            </h2>
+            <p className="success-thankyou" style={{ fontWeight: 700, fontSize: '15px', color: 'var(--col-dark)', marginBottom: '16px' }}>
+              Nous vous appellerons pour confirmer la commande.
             </p>
+            <div className="success-details" style={{ fontSize: '13px', lineHeight: 1.6, color: 'var(--col-dark)', textAlign: 'left', background: 'rgba(0, 0, 0, 0.02)', border: '1px solid var(--col-border)', padding: '20px', borderRadius: '2px', width: '100%', marginBottom: '24px' }}>
+              <p style={{ margin: '0 0 12px 0', borderBottom: '1px solid var(--col-border)', paddingBottom: '8px', color: 'var(--col-dark)', fontWeight: 700, fontSize: '12px' }}>
+                RÉCAPITULATIF DES ARTICLES :
+              </p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '12px' }}>
+                {orderedItemsSnapshot.map((item, i) => (
+                  <div key={i} style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span>
+                      <strong>{item.qty}x</strong> {item.name} <span style={{ fontSize: '11px', color: 'var(--col-muted)' }}>(Taille {item.size})</span>
+                    </span>
+                  </div>
+                ))}
+              </div>
+              <p style={{ margin: '12px 0 0 0', borderTop: '1px solid var(--col-border)', paddingTop: '12px' }}>
+                Votre commande a été enregistrée avec succès. Nous allons vous contacter par téléphone au <strong>{phone}</strong> très prochainement pour confirmer l&apos;expédition de votre colis vers la wilaya de <strong>{wilaya}</strong>.
+              </p>
+            </div>
             <button type="button" className="btn btn-primary" style={{ width: '100%' }} onClick={() => setOrderOpen(false)}>
               RETOUR AU SITE
             </button>
