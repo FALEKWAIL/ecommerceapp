@@ -19,9 +19,9 @@ export default function CartPage() {
     const p = products.find((prod) => prod.name === name);
     if (p) {
       const priceVal = parseFloat(p.price.replace('$', '')) || 0;
-      return { priceStr: p.price, priceVal, imgClass: p.img_class };
+      return { priceStr: p.price, priceVal, imgClass: p.img_class, imgUrl: p.img_url };
     }
-    return { priceStr: '$0.00', priceVal: 0, imgClass: 'product-img-1' };
+    return { priceStr: '$0.00', priceVal: 0, imgClass: 'product-img-1', imgUrl: undefined };
   };
 
   // Calculate cart total
@@ -101,7 +101,7 @@ export default function CartPage() {
             {/* Cart Items List */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginBottom: '40px' }}>
               {cartItems.map((item, idx) => {
-                const { priceStr, priceVal, imgClass } = getItemDetails(item.name);
+                const { priceStr, priceVal, imgClass, imgUrl } = getItemDetails(item.name);
                 const itemTotal = (priceVal * item.qty).toFixed(2);
 
                 return (
@@ -119,8 +119,9 @@ export default function CartPage() {
                   >
                     {/* Thumbnail */}
                     <div
-                      className={imgClass}
+                      className={imgUrl ? "" : imgClass}
                       style={{
+                        backgroundImage: imgUrl ? `url(${imgUrl})` : undefined,
                         width: '70px',
                         height: '90px',
                         backgroundSize: 'cover',

@@ -20,8 +20,10 @@ export function OrderModal() {
   // Reset states when the modal is opened for a new product
   useEffect(() => {
     if (orderProduct) {
-      setSelectedColor(orderProduct.colors[0] || 'Default');
-      setSelectedSize(orderProduct.sizes[0] || 'M');
+      const defaultColor = orderProduct.initialColor || orderProduct.colors?.[0] || 'Default';
+      const defaultSize = orderProduct.initialSize || orderProduct.sizes?.[0] || 'M';
+      setSelectedColor(defaultColor);
+      setSelectedSize(defaultSize);
       setIsSubmitted(false);
       setName('');
       setPhone('');
@@ -29,10 +31,22 @@ export function OrderModal() {
       if (orderProduct.isFromCart) {
         setOrderedItemsSnapshot([...cartItems]);
       } else {
-        setOrderedItemsSnapshot([{ name: orderProduct.name, size: orderProduct.sizes[0] || 'M', qty: 1 }]);
+        setOrderedItemsSnapshot([{ name: orderProduct.name, size: defaultSize, qty: 1, color: defaultColor }]);
       }
     }
-  }, [orderProduct, cartItems]);
+  }, [orderProduct]);
+
+  // Keep orderedItemsSnapshot in sync with selected attributes for direct orders
+  useEffect(() => {
+    if (orderProduct && !orderProduct.isFromCart) {
+      setOrderedItemsSnapshot([{
+        name: orderProduct.name,
+        size: selectedSize,
+        color: selectedColor,
+        qty: 1,
+      }]);
+    }
+  }, [selectedSize, selectedColor, orderProduct]);
 
   if (!isOrderOpen || !orderProduct) return null;
 

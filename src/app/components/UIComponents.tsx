@@ -52,13 +52,7 @@ export function Navbar() {
           </svg>
           <span>SEARCH</span>
         </a>
-        <a href="#" className="nav-icon-btn" aria-label="Account">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-            <circle cx="12" cy="7" r="4" />
-          </svg>
-          <span>ACCOUNT</span>
-        </a>
+
         <a href="/wishlist" className="nav-icon-btn" aria-label="Wishlist">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
             <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
@@ -144,7 +138,7 @@ export function MobileMenu() {
       </div>
       <div className="mobile-menu-bottom">
         <a href="/search" onClick={() => setMobileMenuOpen(false)}>Search</a>
-        <a href="#" onClick={(e) => { e.preventDefault(); }}>Account</a>
+
         <a href="/wishlist" onClick={() => setMobileMenuOpen(false)}>Wishlist</a>
         <a href="/cart" onClick={() => setMobileMenuOpen(false)}>Cart</a>
       </div>
@@ -208,7 +202,7 @@ export function SearchOverlay() {
 
 // ── CART DRAWER ───────────────────────────────────────
 export function CartDrawer() {
-  const { isCartOpen, setCartOpen, cartItems, removeFromCart, startCartOrder } = useApp();
+  const { isCartOpen, setCartOpen, cartItems, removeFromCart, startCartOrder, products } = useApp();
 
   useEffect(() => {
     if (isCartOpen) {
@@ -220,6 +214,18 @@ export function CartDrawer() {
       document.body.style.overflow = '';
     };
   }, [isCartOpen]);
+
+  const getProductImageProps = (name: string) => {
+    const p = products.find(prod => prod.name === name);
+    if (!p) return { className: 'product-img-1', style: undefined };
+    if (p.img_url) {
+      return {
+        className: '',
+        style: { backgroundImage: `url(${p.img_url})`, backgroundSize: 'cover', backgroundPosition: 'center', width: '50px', height: '62px' }
+      };
+    }
+    return { className: p.img_class || 'product-img-1', style: { width: '50px', height: '62px' } };
+  };
 
   return (
     <>
@@ -237,14 +243,23 @@ export function CartDrawer() {
                 key={i} 
                 style={{ 
                   display: 'flex', 
-                  justifyContent: 'space-between', 
+                  gap: '16px',
                   alignItems: 'center', 
                   padding: '14px 0', 
                   borderBottom: '1px solid var(--col-border)' 
                 }}
               >
-                <div>
-                  <div style={{ fontFamily: 'var(--font-body)', fontSize: '14px', color: 'var(--col-dark)' }}>
+                {(() => {
+                  const props = getProductImageProps(item.name);
+                  return (
+                    <div 
+                      className={`order-summary-img ${props.className}`} 
+                      style={{ ...props.style, flexShrink: 0 }}
+                    />
+                  );
+                })()}
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontFamily: 'var(--font-body)', fontSize: '14px', color: 'var(--col-dark)', fontWeight: 500 }}>
                     {item.name}
                   </div>
                   <div style={{ fontFamily: 'var(--font-display)', fontSize: '11px', letterSpacing: '0.1em', color: 'var(--col-muted)', marginTop: '4px' }}>
@@ -372,7 +387,7 @@ export function Footer() {
             <li><a href="/help/size-guide">Size Guide</a></li>
             <li><a href="/help/delivery-info">Delivery Info</a></li>
             <li><a href="/help/returns-exchanges">Returns &amp; Exchanges</a></li>
-            <li><a href="/help/track-my-order">Track My Order</a></li>
+
             <li><a href="/help/contact-us">Contact Us</a></li>
             <li><a href="/help/faq">FAQ</a></li>
           </ul>
@@ -699,6 +714,8 @@ export function ProductDetailDrawer() {
                   imgUrl: detailProduct.img_url,
                   sizes: detailProduct.sizes,
                   colors: detailProduct.colors,
+                  initialSize: selectedSize,
+                  initialColor: selectedColor,
                 });
                 setDetailOpen(false);
               }}

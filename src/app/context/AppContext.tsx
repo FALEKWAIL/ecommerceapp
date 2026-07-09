@@ -17,6 +17,8 @@ export type OrderProductInfo = {
   sizes: string[];
   colors: string[];
   isFromCart?: boolean;
+  initialSize?: string;
+  initialColor?: string;
 };
 
 type AppContextType = {
@@ -43,7 +45,7 @@ type AppContextType = {
   isOrderOpen: boolean;
   setOrderOpen: (open: boolean) => void;
   orderProduct: OrderProductInfo | null;
-  startDirectOrder: (product: { name: string; price: string; imgClass: string; imgUrl?: string; sizes: string[]; colors: string[] }) => void;
+  startDirectOrder: (product: { name: string; price: string; imgClass: string; imgUrl?: string; sizes: string[]; colors: string[]; initialSize?: string; initialColor?: string }) => void;
   startCartOrder: () => void;
   placeOrder: (details: { name: string; phone: string; wilaya: string; size: string; color: string }) => Promise<void>;
 
@@ -185,6 +187,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [products, setProducts] = useState<any[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(true);
 
+  const isLoadedRef = React.useRef(false);
+
   // Load announce status, cart, and wishlist from storage on mount
   useEffect(() => {
     const closed = sessionStorage.getItem('vorn_announce_closed');
@@ -212,16 +216,22 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         console.error('Failed to parse wishlist items:', e);
       }
     }
+
+    isLoadedRef.current = true;
   }, []);
 
   // Save cart to local storage on changes
   useEffect(() => {
-    localStorage.setItem('vorn_cart', JSON.stringify(cartItems));
+    if (isLoadedRef.current) {
+      localStorage.setItem('vorn_cart', JSON.stringify(cartItems));
+    }
   }, [cartItems]);
 
   // Save wishlist to local storage on changes
   useEffect(() => {
-    localStorage.setItem('vorn_wishlist', JSON.stringify(wishlist));
+    if (isLoadedRef.current) {
+      localStorage.setItem('vorn_wishlist', JSON.stringify(wishlist));
+    }
   }, [wishlist]);
 
   // Fetch active products from Supabase
@@ -317,7 +327,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   };
 
   // Direct Order triggers
-  const startDirectOrder = (product: { name: string; price: string; imgClass: string; imgUrl?: string; sizes: string[]; colors: string[] }) => {
+  const startDirectOrder = (product: { name: string; price: string; imgClass: string; imgUrl?: string; sizes: string[]; colors: string[]; initialSize?: string; initialColor?: string }) => {
     setOrderProduct({ ...product, isFromCart: false });
     setOrderOpen(true);
   };

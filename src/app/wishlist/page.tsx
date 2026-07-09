@@ -102,8 +102,9 @@ export default function WishlistPage() {
               >
                 {/* Product Thumbnail */}
                 <div
-                  className={product.img_class}
+                  className={product.img_url ? "" : product.img_class}
                   style={{
+                    backgroundImage: product.img_url ? `url(${product.img_url})` : undefined,
                     height: '240px',
                     backgroundSize: 'cover',
                     backgroundPosition: 'center',
