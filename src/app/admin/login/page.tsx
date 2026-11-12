@@ -2,7 +2,6 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase } from '../../utils/supabaseClient';
 
 export default function AdminLogin() {
   const router = useRouter();
@@ -16,15 +15,34 @@ export default function AdminLogin() {
     setLoading(true);
     setError('');
 
-    const { error: authError } = await supabase.auth.signInWithPassword({ email, password });
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
 
-    if (authError) {
-      setError(authError.message || 'Invalid email or password. Please try again.');
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        setError(data.error || 'Invalid email or password. Please try again.');
+        setLoading(false);
+        return;
+      }
+
+      // Store token and user in localStorage as backup
+      if (data.token) {
+        localStorage.setItem('admin_token', data.token);
+      }
+      if (data.user) {
+        localStorage.setItem('admin_user', JSON.stringify(data.user));
+      }
+
+      router.push('/admin/dashboard');
+    } catch (err: any) {
+      setError(err.message || 'An error occurred during login. Please try again.');
       setLoading(false);
-      return;
     }
-
-    router.push('/admin/dashboard');
   };
 
   return (

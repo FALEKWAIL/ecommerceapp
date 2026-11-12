@@ -2,11 +2,10 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase } from '../../utils/supabaseClient';
 
 // ── TYPES ───────────────────────────────────────────────
 interface Product {
-  id: number;
+  id: string | number;
   name: string;
   category: string;
   price: string;
@@ -22,7 +21,7 @@ interface Product {
 }
 
 interface Order {
-  id: number;
+  id: string | number;
   customer_name: string;
   customer_phone: string;
   customer_wilaya: string;
@@ -99,39 +98,50 @@ export default function AdminDashboard() {
   const [toastVisible, setToastVisible] = useState(false);
 
   // Confirm Delete
-  const [deleteId, setDeleteId] = useState<number | null>(null);
+  const [deleteId, setDeleteId] = useState<string | number | null>(null);
 
   // ── AUTH CHECK ──────────────────────────────────────────
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      if (!data.user) {
+    fetch('/api/auth/me')
+      .then(async (res) => {
+        const data = await res.json();
+        if (!data.success || !data.user) {
+          router.push('/admin/login');
+        } else {
+          setUserEmail(data.user.email ?? '');
+          setAuthChecked(true);
+        }
+      })
+      .catch(() => {
         router.push('/admin/login');
-      } else {
-        setUserEmail(data.user.email ?? '');
-        setAuthChecked(true);
-      }
-    });
+      });
   }, [router]);
 
   // ── LOAD DATA ───────────────────────────────────────────
   const loadProducts = useCallback(async () => {
     setLoadingProducts(true);
-    const { data } = await supabase
-      .from('products')
-      .select('*')
-      .order('created_at', { ascending: false });
-    setProducts(data ?? []);
-    setLoadingProducts(false);
+    try {
+      const res = await fetch('/api/products?all=true');
+      const json = await res.json();
+      setProducts(json.data ?? []);
+    } catch (err) {
+      console.error('Failed to load products:', err);
+    } finally {
+      setLoadingProducts(false);
+    }
   }, []);
 
   const loadOrders = useCallback(async () => {
     setLoadingOrders(true);
-    const { data } = await supabase
-      .from('orders')
-      .select('*')
-      .order('created_at', { ascending: false });
-    setOrders(data ?? []);
-    setLoadingOrders(false);
+    try {
+      const res = await fetch('/api/orders');
+      const json = await res.json();
+      setOrders(json.data ?? []);
+    } catch (err) {
+      console.error('Failed to load orders:', err);
+    } finally {
+      setLoadingOrders(false);
+    }
   }, []);
 
   useEffect(() => {
@@ -149,7 +159,13 @@ export default function AdminDashboard() {
 
   // ── LOGOUT ──────────────────────────────────────────────
   const handleLogout = async () => {
-    await supabase.auth.signOut();
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+    } catch {
+      // ignore
+    }
+    localStorage.removeItem('admin_token');
+    localStorage.removeItem('admin_user');
     router.push('/admin/login');
   };
 
@@ -196,15 +212,25 @@ export default function AdminDashboard() {
 
   const uploadImageToStorage = async (file: File): Promise<string | null> => {
     setUploading(true);
-    const ext = file.name.split('.').pop();
-    const filename = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-    const { error } = await supabase.storage
-      .from('product-images')
-      .upload(filename, file, { cacheControl: '3600', upsert: false });
-    setUploading(false);
-    if (error) { setFormError(`Upload failed: ${error.message}`); return null; }
-    const { data } = supabase.storage.from('product-images').getPublicUrl(filename);
-    return data.publicUrl;
+    const formData = new FormData();
+    formData.append('file', file);
+    try {
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await res.json();
+      setUploading(false);
+      if (!res.ok || !data.success) {
+        setFormError(`Upload failed: ${data.error || 'Server error'}`);
+        return null;
+      }
+      return data.url;
+    } catch (err: any) {
+      setUploading(false);
+      setFormError(`Upload failed: ${err.message}`);
+      return null;
+    }
   };
 
   const handleSaveProduct = async () => {
@@ -234,34 +260,69 @@ export default function AdminDashboard() {
       is_active: form.is_active,
     };
 
-    if (editProduct) {
-      const { error } = await supabase.from('products').update(payload).eq('id', editProduct.id);
-      if (error) { setFormError(error.message); setSaving(false); return; }
-      showToast(`"${form.name}" updated.`);
-    } else {
-      const { error } = await supabase.from('products').insert(payload);
-      if (error) { setFormError(error.message); setSaving(false); return; }
-      showToast(`"${form.name}" added.`);
-    }
+    try {
+      if (editProduct) {
+        const res = await fetch(`/api/products/${editProduct.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+          setFormError(data.error || 'Failed to update product');
+          setSaving(false);
+          return;
+        }
+        showToast(`"${form.name}" updated.`);
+      } else {
+        const res = await fetch('/api/products', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+          setFormError(data.error || 'Failed to add product');
+          setSaving(false);
+          return;
+        }
+        showToast(`"${form.name}" added.`);
+      }
 
-    setSaving(false);
-    closeDrawer();
-    loadProducts();
+      setSaving(false);
+      closeDrawer();
+      loadProducts();
+    } catch (err: any) {
+      setFormError(err.message || 'Error saving product');
+      setSaving(false);
+    }
   };
 
   const handleDeleteProduct = async () => {
     if (!deleteId) return;
-    await supabase.from('products').delete().eq('id', deleteId);
-    setDeleteId(null);
-    showToast('Product deleted.');
-    loadProducts();
+    try {
+      await fetch(`/api/products/${deleteId}`, { method: 'DELETE' });
+      setDeleteId(null);
+      showToast('Product deleted.');
+      loadProducts();
+    } catch (err: any) {
+      showToast(`Error deleting product: ${err.message}`);
+    }
   };
 
   // ── ORDER STATUS UPDATE ──────────────────────────────────
-  const updateOrderStatus = async (id: number, status: string) => {
-    await supabase.from('orders').update({ status }).eq('id', id);
-    setOrders(prev => prev.map(o => o.id === id ? { ...o, status: status as Order['status'] } : o));
-    showToast(`Order #${id} → ${status}`);
+  const updateOrderStatus = async (id: string | number, status: string) => {
+    try {
+      await fetch(`/api/orders/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status }),
+      });
+      setOrders(prev => prev.map(o => o.id === id ? { ...o, status: status as Order['status'] } : o));
+      showToast(`Order #${id} → ${status}`);
+    } catch (err: any) {
+      showToast(`Failed to update order: ${err.message}`);
+    }
   };
 
   // ── FILTERS ─────────────────────────────────────────────
@@ -962,7 +1023,7 @@ export default function AdminDashboard() {
 // ── ORDER TABLE COMPONENT ────────────────────────────────
 function OrderTable({ orders, onStatusUpdate, compact = false }: {
   orders: Order[];
-  onStatusUpdate: (id: number, status: string) => void;
+  onStatusUpdate: (id: string | number, status: string) => void;
   compact?: boolean;
 }) {
   if (orders.length === 0) {

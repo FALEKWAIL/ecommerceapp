@@ -1,7 +1,6 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { supabase } from '../utils/supabaseClient';
 
 export type CartItem = {
   name: string;
@@ -13,12 +12,28 @@ export type OrderProductInfo = {
   name: string;
   price: string;
   imgClass: string;
-  imgUrl?: string;
+  imgUrl?: string | null;
   sizes: string[];
   colors: string[];
   isFromCart?: boolean;
   initialSize?: string;
   initialColor?: string;
+};
+
+export type StoreProduct = {
+  id?: string | number;
+  name: string;
+  category: string;
+  price: string;
+  original_price?: string | null;
+  sizes: string[];
+  out_of_stock_sizes?: string[];
+  label?: string | null;
+  img_class?: string;
+  img_url?: string | null;
+  colors: string[];
+  is_active?: boolean;
+  [key: string]: any;
 };
 
 type AppContextType = {
@@ -40,12 +55,12 @@ type AppContextType = {
   toastMessage: string;
   showToast: (msg: string) => void;
   isToastVisible: boolean;
-  
+
   // Direct Order States
   isOrderOpen: boolean;
   setOrderOpen: (open: boolean) => void;
   orderProduct: OrderProductInfo | null;
-  startDirectOrder: (product: { name: string; price: string; imgClass: string; imgUrl?: string; sizes: string[]; colors: string[]; initialSize?: string; initialColor?: string }) => void;
+  startDirectOrder: (product: { name: string; price: string; imgClass: string; imgUrl?: string | null; sizes: string[]; colors: string[]; initialSize?: string; initialColor?: string }) => void;
   startCartOrder: () => void;
   placeOrder: (details: { name: string; phone: string; wilaya: string; size: string; color: string }) => Promise<void>;
 
@@ -56,17 +71,17 @@ type AppContextType = {
   // Product Details Drawer States
   isDetailOpen: boolean;
   setDetailOpen: (open: boolean) => void;
-  detailProduct: any | null;
-  openDetail: (product: any) => void;
+  detailProduct: StoreProduct | null;
+  openDetail: (product: StoreProduct) => void;
 
-  // Dynamic Product Data from Supabase
-  products: any[];
+  // Dynamic Product Data from MongoDB Backend
+  products: StoreProduct[];
   loadingProducts: boolean;
 };
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
-const MOCK_PRODUCTS = [
+const MOCK_PRODUCTS: StoreProduct[] = [
   {
     id: 1,
     name: "Washed Canvas Overshirt",
@@ -165,7 +180,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [isAnnounceVisible, setAnnounceVisible] = useState(true);
   const [toastMessage, setToastMessage] = useState('');
   const [isToastVisible, setToastVisible] = useState(false);
-  const [toastTimer, setToastTimer] = useState<NodeJS.Timeout | null>(null);
+  const [toastTimer, setToastTimer] = useState<ReturnType<typeof setTimeout> | null>(null);
 
   // Direct Order States
   const [isOrderOpen, setOrderOpen] = useState(false);
@@ -176,260 +191,265 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   // Product Details Drawer States
   const [isDetailOpen, setDetailOpen] = useState(false);
-  const [detailProduct, setDetailProduct] = useState<any | null>(null);
+  const [detailProduct, setDetailProduct] = useState<StoreProduct | null>(null);
 
-  const openDetail = (product: any) => {
-    setDetailProduct(product);
-    setDetailOpen(true);
-  };
-
-  // Dynamic Product Data States
-  const [products, setProducts] = useState<any[]>([]);
-  const [loadingProducts, setLoadingProducts] = useState(true);
-
-  const isLoadedRef = React.useRef(false);
-
-  // Load announce status, cart, and wishlist from storage on mount
-  useEffect(() => {
-    const closed = sessionStorage.getItem('vorn_announce_closed');
-    if (closed) {
-      setAnnounceVisible(false);
-      document.documentElement.style.setProperty('--announce-h', '0px');
-    } else {
-      document.documentElement.style.setProperty('--announce-h', '36px');
-    }
-
-    const savedCart = localStorage.getItem('vorn_cart');
-    if (savedCart) {
-      try {
-        setCartItems(JSON.parse(savedCart));
-      } catch (e) {
-        console.error('Failed to parse cart items:', e);
-      }
-    }
-
-    const savedWishlist = localStorage.getItem('vorn_wishlist');
-    if (savedWishlist) {
-      try {
-        setWishlist(JSON.parse(savedWishlist));
-      } catch (e) {
-        console.error('Failed to parse wishlist items:', e);
-      }
-    }
-
-    isLoadedRef.current = true;
-  }, []);
-
-  // Save cart to local storage on changes
-  useEffect(() => {
-    if (isLoadedRef.current) {
-      localStorage.setItem('vorn_cart', JSON.stringify(cartItems));
-    }
-  }, [cartItems]);
-
-  // Save wishlist to local storage on changes
-  useEffect(() => {
-    if (isLoadedRef.current) {
-      localStorage.setItem('vorn_wishlist', JSON.stringify(wishlist));
-    }
-  }, [wishlist]);
-
-  // Fetch active products from Supabase
-  useEffect(() => {
-    async function loadDbProducts() {
-      try {
-        const { data, error } = await supabase
-          .from('products')
-          .select('*')
-          .eq('is_active', true)
-          .order('created_at', { ascending: false });
-        
-        if (error) throw error;
-        
-        if (data && data.length > 0) {
-          setProducts(data);
-        } else {
-          setProducts(MOCK_PRODUCTS);
-        }
-      } catch (err) {
-        console.error('Failed to fetch store products, using fallbacks:', err);
-        setProducts(MOCK_PRODUCTS);
-      } finally {
-        setLoadingProducts(false);
-      }
-    }
-    loadDbProducts();
-  }, []);
-
-  const dismissAnnounce = () => {
-    setAnnounceVisible(false);
-    document.documentElement.style.setProperty('--announce-h', '0px');
-    sessionStorage.setItem('vorn_announce_closed', '1');
-  };
-
-  const showToast = (msg: string) => {
-    setToastMessage(msg);
-    setToastVisible(true);
-    if (toastTimer) clearTimeout(toastTimer);
-    const timer = setTimeout(() => {
-      setToastVisible(false);
-    }, 2800);
-    setToastTimer(timer);
-  };
-
-  const addToCart = (name: string, size = 'M') => {
-    setCartItems((prev) => {
-      const existingIdx = prev.findIndex(item => item.name === name && item.size === size);
-      if (existingIdx > -1) {
-        const updated = [...prev];
-        updated[existingIdx] = {
-          ...updated[existingIdx],
-          qty: updated[existingIdx].qty + 1
-        };
-        return updated;
-      }
-      return [...prev, { name, size, qty: 1 }];
-    });
-    showToast(`${name} added to your bag.`);
-  };
-
-  const removeFromCart = (index: number) => {
-    setCartItems((prev) => prev.filter((_, i) => i !== index));
-  };
-
-  const updateCartQty = (index: number, qty: number) => {
-    if (qty <= 0) {
-      removeFromCart(index);
-      return;
-    }
-    setCartItems((prev) => {
-      const updated = [...prev];
-      updated[index] = { ...updated[index], qty };
-      return updated;
-    });
-  };
-
-  const clearCart = () => {
-    setCartItems([]);
-  };
-
-  const toggleWishlist = (name: string) => {
-    setWishlist((prev) => {
-      const exists = prev.includes(name);
-      if (exists) {
-        showToast(`Removed from wishlist.`);
-        return prev.filter((item) => item !== name);
-      } else {
-        showToast(`Added to wishlist.`);
-        return [...prev, name];
-      }
-    });
-  };
-
-  // Direct Order triggers
-  const startDirectOrder = (product: { name: string; price: string; imgClass: string; imgUrl?: string; sizes: string[]; colors: string[]; initialSize?: string; initialColor?: string }) => {
-    setOrderProduct({ ...product, isFromCart: false });
-    setOrderOpen(true);
-  };
-
-  const startCartOrder = () => {
-    if (cartItems.length === 0) {
-      showToast("Your bag is empty.");
-      return;
-    }
-    
-    setOrderProduct({
-      name: `Cart Order (${cartItems.length} items)`,
-      price: '',
-      imgClass: 'product-img-1',
-      sizes: ['M'],
-      colors: ['Default'],
-      isFromCart: true
-    });
-    setCartOpen(false);
-    setOrderOpen(true);
-  };
-
-  const placeOrder = async (details: { name: string; phone: string; wilaya: string; size: string; color: string }) => {
-    // Save to Supabase
-    const payload = {
-      customer_name:   details.name,
-      customer_phone:  details.phone,
-      customer_wilaya: details.wilaya,
-      size:            details.size,
-      color:           details.color,
-      product_name:    orderProduct?.isFromCart ? null : orderProduct?.name ?? null,
-      product_price:   orderProduct?.isFromCart ? null : orderProduct?.price ?? null,
-      is_cart_order:   orderProduct?.isFromCart ?? false,
-      cart_items:      orderProduct?.isFromCart ? cartItems : [],
-      status:          'Pending',
+    const openDetail = (product: StoreProduct) => {
+      setDetailProduct(product);
+      setDetailOpen(true);
     };
 
-    const { error } = await supabase.from('orders').insert(payload);
-    if (error) {
-      console.error('Order insert failed:', error.message);
-      showToast('Error placing order. Please try again.');
-      return;
+    // Dynamic Product Data States
+    const [products, setProducts] = useState<StoreProduct[]>([]);
+    const [loadingProducts, setLoadingProducts] = useState(true);
+
+    const isLoadedRef = React.useRef(false);
+
+    // Load announce status, cart, and wishlist from storage on mount
+    useEffect(() => {
+      const closed = sessionStorage.getItem('vorn_announce_closed');
+      if (closed) {
+        setAnnounceVisible(false);
+        document.documentElement.style.setProperty('--announce-h', '0px');
+      } else {
+        document.documentElement.style.setProperty('--announce-h', '36px');
+      }
+
+      const savedCart = localStorage.getItem('vorn_cart');
+      if (savedCart) {
+        try {
+          setCartItems(JSON.parse(savedCart));
+        } catch (e) {
+          console.error('Failed to parse cart items:', e);
+        }
+      }
+
+      const savedWishlist = localStorage.getItem('vorn_wishlist');
+      if (savedWishlist) {
+        try {
+          setWishlist(JSON.parse(savedWishlist));
+        } catch (e) {
+          console.error('Failed to parse wishlist items:', e);
+        }
+      }
+
+      isLoadedRef.current = true;
+    }, []);
+
+    // Save cart to local storage on changes
+    useEffect(() => {
+      if (isLoadedRef.current) {
+        localStorage.setItem('vorn_cart', JSON.stringify(cartItems));
+      }
+    }, [cartItems]);
+
+    // Save wishlist to local storage on changes
+    useEffect(() => {
+      if (isLoadedRef.current) {
+        localStorage.setItem('vorn_wishlist', JSON.stringify(wishlist));
+      }
+    }, [wishlist]);
+
+    // Fetch active products from MongoDB backend
+    useEffect(() => {
+      async function loadDbProducts() {
+        try {
+          const res = await fetch('/api/products');
+          const json = await res.json();
+
+          if (json.success && Array.isArray(json.data) && json.data.length > 0) {
+            setProducts(json.data);
+          } else {
+            setProducts(MOCK_PRODUCTS);
+          }
+        } catch {
+          console.warn('Could not reach backend products API, using mock products fallback.');
+          setProducts(MOCK_PRODUCTS);
+        } finally {
+          setLoadingProducts(false);
+        }
+      }
+      loadDbProducts();
+    }, []);
+
+    const dismissAnnounce = () => {
+      setAnnounceVisible(false);
+      document.documentElement.style.setProperty('--announce-h', '0px');
+      sessionStorage.setItem('vorn_announce_closed', '1');
+    };
+
+    const showToast = (msg: string) => {
+      setToastMessage(msg);
+      setToastVisible(true);
+      if (toastTimer) clearTimeout(toastTimer);
+      const timer = setTimeout(() => {
+        setToastVisible(false);
+      }, 2800);
+      setToastTimer(timer);
+    };
+
+    const addToCart = (name: string, size = 'M') => {
+      setCartItems((prev) => {
+        const existingIdx = prev.findIndex(item => item.name === name && item.size === size);
+        if (existingIdx > -1) {
+          const updated = [...prev];
+          updated[existingIdx] = {
+            ...updated[existingIdx],
+            qty: updated[existingIdx].qty + 1
+          };
+          return updated;
+        }
+        return [...prev, { name, size, qty: 1 }];
+      });
+      showToast(`${name} added to your bag.`);
+    };
+
+    const removeFromCart = (index: number) => {
+      setCartItems((prev) => prev.filter((_, i) => i !== index));
+    };
+
+    const updateCartQty = (index: number, qty: number) => {
+      if (qty <= 0) {
+        removeFromCart(index);
+        return;
+      }
+      setCartItems((prev) => {
+        const updated = [...prev];
+        updated[index] = { ...updated[index], qty };
+        return updated;
+      });
+    };
+
+    const clearCart = () => {
+      setCartItems([]);
+    };
+
+    const toggleWishlist = (name: string) => {
+      setWishlist((prev) => {
+        const exists = prev.includes(name);
+        if (exists) {
+          showToast(`Removed from wishlist.`);
+          return prev.filter((item) => item !== name);
+        } else {
+          showToast(`Added to wishlist.`);
+          return [...prev, name];
+        }
+      });
+    };
+
+    // Direct Order triggers
+      const startDirectOrder = (product: { name: string; price: string; imgClass: string; imgUrl?: string | null; sizes: string[]; colors: string[]; initialSize?: string; initialColor?: string }) => {
+        setOrderProduct({ ...product, isFromCart: false });
+        setOrderOpen(true);
+      };
+
+      const startCartOrder = () => {
+        if (cartItems.length === 0) {
+          showToast("Your bag is empty.");
+          return;
+        }
+
+        setOrderProduct({
+          name: `Cart Order (${cartItems.length} items)`,
+          price: '',
+          imgClass: 'product-img-1',
+          sizes: ['M'],
+          colors: ['Default'],
+          isFromCart: true
+        });
+        setCartOpen(false);
+        setOrderOpen(true);
+      };
+
+      const placeOrder = async (details: { name: string; phone: string; wilaya: string; size: string; color: string }) => {
+        // Save to MongoDB backend
+        const payload = {
+          customer_name: details.name,
+          customer_phone: details.phone,
+          customer_wilaya: details.wilaya,
+          size: details.size,
+          color: details.color,
+          product_name: orderProduct?.isFromCart ? null : orderProduct?.name ?? null,
+          product_price: orderProduct?.isFromCart ? null : orderProduct?.price ?? null,
+          is_cart_order: orderProduct?.isFromCart ?? false,
+          cart_items: orderProduct?.isFromCart ? cartItems : [],
+          status: 'Pending',
+        };
+
+        try {
+          const res = await fetch('/api/orders', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          });
+          const json = await res.json();
+
+          if (!res.ok || !json.success) {
+            throw new Error(json.error || 'Failed to place order');
+          }
+
+          if (orderProduct?.isFromCart) {
+            clearCart();
+          }
+          showToast(`Thank you, ${details.name}! Your order has been placed.`);
+        } catch (err: unknown) {
+          const errMsg = err instanceof Error ? err.message : 'Unknown error';
+          console.error('Order placement failed:', errMsg);
+          showToast('Error placing order. Please try again.');
+        }
+      };
+
+      return (
+        <AppContext.Provider
+          value={{
+            cartItems,
+            addToCart,
+            removeFromCart,
+            clearCart,
+            updateCartQty,
+            wishlist,
+            toggleWishlist,
+            isCartOpen,
+            setCartOpen,
+            isSearchOpen,
+            setSearchOpen,
+            isMobileMenuOpen,
+            setMobileMenuOpen,
+            isAnnounceVisible,
+            dismissAnnounce,
+            toastMessage,
+            showToast,
+            isToastVisible,
+
+            // Direct Order Exports
+            isOrderOpen,
+            setOrderOpen,
+            orderProduct,
+            startDirectOrder,
+            startCartOrder,
+            placeOrder,
+
+            // Wishlist Drawer Exports
+            isWishlistOpen,
+            setWishlistOpen,
+
+            // Product Details Drawer Exports
+            isDetailOpen,
+            setDetailOpen,
+            detailProduct,
+            openDetail,
+
+            // Dynamic Products from Supabase
+            products,
+            loadingProducts,
+          }}
+        >
+          {children}
+        </AppContext.Provider>
+      );
     }
 
-    if (orderProduct?.isFromCart) {
-      clearCart();
+    export function useApp() {
+      const context = useContext(AppContext);
+      if (!context) throw new Error('useApp must be used within AppProvider');
+      return context;
     }
-    showToast(`Thank you, ${details.name}! Your order has been placed.`);
-  };
-
-  return (
-    <AppContext.Provider
-      value={{
-        cartItems,
-        addToCart,
-        removeFromCart,
-        clearCart,
-        updateCartQty,
-        wishlist,
-        toggleWishlist,
-        isCartOpen,
-        setCartOpen,
-        isSearchOpen,
-        setSearchOpen,
-        isMobileMenuOpen,
-        setMobileMenuOpen,
-        isAnnounceVisible,
-        dismissAnnounce,
-        toastMessage,
-        showToast,
-        isToastVisible,
-        
-        // Direct Order Exports
-        isOrderOpen,
-        setOrderOpen,
-        orderProduct,
-        startDirectOrder,
-        startCartOrder,
-        placeOrder,
-
-        // Wishlist Drawer Exports
-        isWishlistOpen,
-        setWishlistOpen,
-
-        // Product Details Drawer Exports
-        isDetailOpen,
-        setDetailOpen,
-        detailProduct,
-        openDetail,
-
-        // Dynamic Products from Supabase
-        products,
-        loadingProducts,
-      }}
-    >
-      {children}
-    </AppContext.Provider>
-  );
-}
-
-export function useApp() {
-  const context = useContext(AppContext);
-  if (!context) throw new Error('useApp must be used within AppProvider');
-  return context;
-}
